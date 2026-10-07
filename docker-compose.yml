@@ -1,0 +1,67 @@
+services:
+  wordpress:
+    image: wordpress:latest
+    ports:
+      - "7000:80"
+    environment:
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./plugins:/var/www/html/wp-content/plugins
+    depends_on:
+      db:
+        condition: service_healthy
+
+  analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      WORDPRESS_URL: ${WORDPRESS_URL}
+      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./config/psalm.xml:/var/www/html/psalm.xml
+      - ./plugins:/var/www/html/wp-content/plugins
+      - ./data:/data
+      - ./tools:/tools
+      - ./bin:/opt/bin:ro
+    depends_on:
+      - wordpress
+      - db
+    entrypoint: ["tail", "-f", "/dev/null"]
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${WORDPRESS_DB_NAME}
+      MYSQL_USER: ${WORDPRESS_DB_USER}
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  wordpress_data:
+  db_data:

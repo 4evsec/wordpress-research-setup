@@ -1,0 +1,8 @@
+{
+  "name": "4evsec/research",
+  "require-dev": {
+    "vimeo/psalm": "^6.16",
+    "wp-cli/wp-cli-bundle": "^2.12",
+    "humanmade/psalm-plugin-wordpress": "^3.1"
+  }
+}
